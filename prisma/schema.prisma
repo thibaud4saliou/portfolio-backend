@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id              String   @id @default(uuid())
+  title           String
+  category        String   
+  role            String
+  year            String
+  synopsis        String?  @db.Text
+  videoUrl        String?
+  coverImageUrl   String?  // C'est la miniature !
+  makingOfUrl     String?
+  credits         String?  @db.Text
+  stills          String[]
+  order           Int      @default(0) 
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Photo {
+  id          String   @id @default(uuid())
+  title       String?  // NOUVEAU : Le titre de la photo
+  category    String   
+  subcategory String?
+  imageUrl    String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  text      String   @db.Text
+  author    String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Equipment {
+  id        String   @id @default(uuid())
+  category  String   
+  name      String
+  order     Int      @default(0)
+}
