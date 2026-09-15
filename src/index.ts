@@ -18,6 +18,22 @@ app.get('/api/photos', async (req, res) => res.json(await prisma.photo.findMany(
 app.get('/api/reviews', async (req, res) => res.json(await prisma.review.findMany({ orderBy: { order: 'asc' } })));
 app.get('/api/equipment', async (req, res) => res.json(await prisma.equipment.findMany({ orderBy: { order: 'asc' } })));
 
+// --- ROUTES SETTINGS (NOUVEAU) ---
+app.get('/api/settings', async (req, res) => {
+  const settings = await prisma.siteSettings.findFirst();
+  res.json(settings || {});
+});
+
+app.put('/api/settings/:id', async (req, res) => {
+  // On utilise "upsert" pour s'assurer qu'on modifie toujours la même ligne (ID = 1)
+  const settings = await prisma.siteSettings.upsert({
+    where: { id: 1 },
+    update: req.body,
+    create: { id: 1, ...req.body }
+  });
+  res.json(settings);
+});
+
 // --- ROUTES POST (Créer) ---
 app.post('/api/projects', async (req, res) => res.json(await prisma.project.create({ data: req.body })));
 app.post('/api/photos', async (req, res) => res.json(await prisma.photo.create({ data: req.body })));
@@ -36,4 +52,4 @@ app.delete('/api/photos/:id', async (req, res) => res.json(await prisma.photo.de
 app.delete('/api/reviews/:id', async (req, res) => res.json(await prisma.review.delete({ where: { id: req.params.id } })));
 app.delete('/api/equipment/:id', async (req, res) => res.json(await prisma.equipment.delete({ where: { id: req.params.id } })));
 
-app.listen(PORT, () => console.log(`🚀 Serveur API connecté sur le port ${PORT}`));
+app.listen(PORT, () => console.log(`Serveur API connecté sur le port ${PORT}`));

@@ -48,3 +48,12 @@ model Equipment {
   name      String
   order     Int      @default(0)
 }
+
+model SiteSettings {
+  id                Int     @id @default(autoincrement())
+  home_video_url    String?
+  profile_photo_url String?
+  history_text      String?
+  expertise_text    String?
+  clips_text        String?
+}
