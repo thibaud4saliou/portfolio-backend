@@ -61,4 +61,7 @@ model SiteSettings {
   malt_url          String?
   instagram_url     String?
   vimeo_url         String?
+  devis_text            String?
+  mentions_legales_text String?
+  rgpd_text             String?
 }
