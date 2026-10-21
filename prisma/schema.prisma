@@ -64,4 +64,10 @@ model SiteSettings {
   devis_text            String?
   mentions_legales_text String?
   rgpd_text             String?
+  contact_email          String?
+  home_video_opacity     String?
+  awards_image_url       String?
+  demo_reel_image_url    String?
+  demo_reel_link         String?
+  photo_categories_order String?
 }
