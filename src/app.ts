@@ -59,6 +59,16 @@ export function createApp(deps: AppDeps) {
 
   const app = express();
   app.disable('x-powered-by');
+
+  // Tâches en arrière-plan (envoi de mails) : attendues à l'arrêt du serveur et dans les tests.
+  const pending = new Set<Promise<void>>();
+  const track = (task: Promise<void>) => {
+    pending.add(task);
+    task.finally(() => pending.delete(task));
+  };
+  app.locals.idle = async () => {
+    await Promise.all([...pending]);
+  };
   // Derrière nginx / Vercel / Render : req.ip = vraie IP du visiteur.
   app.set('trust proxy', config.trustProxy);
   app.use(express.json({ limit: '100kb' }));
@@ -229,24 +239,38 @@ export function createApp(deps: AppDeps) {
       logger.error('[contact] Enregistrement en base impossible :', err);
     }
 
-    let emailError: string | null = null;
-    try {
-      const settings = await db.siteSettings.findUnique({ where: { id: SETTINGS_ID } });
-      const to: string = settings?.contact_email || config.contactTo;
-      if (!mailer || !to || !config.mailFrom) throw new Error('SMTP ou destinataire non configuré');
-      await mailer.send(buildContactEmail(contact, { from: config.mailFrom, to }));
-    } catch (err) {
-      emailError = (err as Error).message?.slice(0, 500) || 'Erreur inconnue';
-      logger.error('[contact] Email non envoyé :', emailError);
-    }
+    const deliver = async (): Promise<string | null> => {
+      try {
+        const settings = await db.siteSettings.findUnique({ where: { id: SETTINGS_ID } });
+        const to: string = settings?.contact_email || config.contactTo;
+        if (!mailer || !to || !config.mailFrom) throw new Error('Envoi de mail non configuré');
+        await mailer.send(buildContactEmail(contact, { from: config.mailFrom, to }));
+        return null;
+      } catch (err) {
+        const message = (err as Error).message?.slice(0, 500) || 'Erreur inconnue';
+        logger.error('[contact] Email non envoyé :', message);
+        return message;
+      }
+    };
 
     if (savedId) {
-      await db.contactRequest
-        .update({ where: { id: savedId }, data: { emailSent: emailError === null, emailError } })
-        .catch((err: unknown) => logger.error('[contact] Mise à jour du statut impossible :', err));
+      // Demande en sécurité en base : on répond tout de suite au visiteur,
+      // le mail part en arrière-plan (il n'attend plus la réponse du serveur mail).
+      const id = savedId;
+      track(
+        deliver().then((emailError) =>
+          db.contactRequest
+            .update({ where: { id }, data: { emailSent: emailError === null, emailError } })
+            .then(() => undefined)
+            .catch((err: unknown) => logger.error('[contact] Mise à jour du statut impossible :', err)),
+        ),
+      );
+      res.json({ success: true });
+      return;
     }
 
-    if (!savedId && emailError) {
+    // Base indisponible : le mail est le seul moyen de ne pas perdre la demande.
+    if (await deliver()) {
       res.status(502).json({ error: "La demande n'a pas pu être transmise" });
       return;
     }

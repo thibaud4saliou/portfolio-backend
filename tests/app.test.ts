@@ -84,6 +84,7 @@ function makeConfig(over: Partial<AppConfig> = {}): AppConfig {
     mailFrom: 'site@gmail.com',
     contactTo: 'fallback@exemple.fr',
     trustProxy: 1,
+    resendApiKey: null,
     contactRetentionDays: 365,
     storage: null,
     ...over,
@@ -129,11 +130,13 @@ describe('API', () => {
 
     it('400 sur JSON invalide, sans faire tomber le serveur', async () => {
       const res = await request(app).post('/api/contact').set('Content-Type', 'application/json').send('{oops');
+      await app.locals.idle();
       expect(res.status).toBe(400);
     });
 
     it('413 sur requête trop grosse', async () => {
       const res = await request(app).post('/api/contact').send({ message: 'x'.repeat(200_000) });
+      await app.locals.idle();
       expect(res.status).toBe(413);
     });
 
@@ -285,6 +288,7 @@ describe('API', () => {
     it('envoie le mail au destinataire configuré dans l’admin', async () => {
       await db.siteSettings.upsert({ create: { id: 1, contact_email: 'thibaud@exemple.fr' } });
       const res = await request(app).post('/api/contact').send(contact);
+      await app.locals.idle();
       expect(res.status).toBe(200);
       expect(mailer.send).toHaveBeenCalledTimes(1);
       const msg = mailer.send.mock.calls[0][0];
@@ -295,17 +299,20 @@ describe('API', () => {
 
     it('utilise CONTACT_TO à défaut', async () => {
       await request(app).post('/api/contact').send(contact);
+      await app.locals.idle();
       expect(mailer.send.mock.calls[0][0].to).toBe('fallback@exemple.fr');
     });
 
     it('400 si données invalides, sans envoyer', async () => {
       const res = await request(app).post('/api/contact').send({ ...contact, email: 'nope' });
+      await app.locals.idle();
       expect(res.status).toBe(400);
       expect(mailer.send).not.toHaveBeenCalled();
     });
 
     it('ignore silencieusement les robots (honeypot)', async () => {
       const res = await request(app).post('/api/contact').send({ ...contact, website: 'http://spam' });
+      await app.locals.idle();
       expect(res.status).toBe(200);
       expect(mailer.send).not.toHaveBeenCalled();
     });
@@ -313,11 +320,13 @@ describe('API', () => {
     it('limite le nombre de demandes par IP', async () => {
       for (let i = 0; i < 5; i++) await request(app).post('/api/contact').send(contact);
       const res = await request(app).post('/api/contact').send(contact);
+      await app.locals.idle();
       expect(res.status).toBe(429);
     });
 
     it('enregistre la demande en base avec le statut d’envoi', async () => {
       await request(app).post('/api/contact').send(contact);
+      await app.locals.idle();
       expect(db.contactRequest.rows).toHaveLength(1);
       const row = db.contactRequest.rows[0];
       expect(row.email).toBe('client@exemple.fr');
@@ -328,6 +337,7 @@ describe('API', () => {
     it('SMTP non configuré : la demande est quand même enregistrée (aucun prospect perdu)', async () => {
       app = createApp({ db, config: makeConfig(), mailer: null, logger: silentLogger });
       const res = await request(app).post('/api/contact').send(contact);
+      await app.locals.idle();
       expect(res.status).toBe(200);
       expect(db.contactRequest.rows[0].emailSent).toBe(false);
       expect(db.contactRequest.rows[0].emailError).toMatch(/non configuré/);
@@ -336,6 +346,7 @@ describe('API', () => {
     it('aucun destinataire : enregistrée, mail en erreur', async () => {
       app = createApp({ db, config: makeConfig({ contactTo: '' }), mailer, logger: silentLogger });
       expect((await request(app).post('/api/contact').send(contact)).status).toBe(200);
+      await app.locals.idle();
       expect(mailer.send).not.toHaveBeenCalled();
       expect(db.contactRequest.rows[0].emailSent).toBe(false);
     });
@@ -343,6 +354,7 @@ describe('API', () => {
     it('SMTP en panne : 200 car la demande est sauvegardée', async () => {
       mailer.send.mockRejectedValueOnce(new Error('auth failed'));
       expect((await request(app).post('/api/contact').send(contact)).status).toBe(200);
+      await app.locals.idle();
       expect(db.contactRequest.rows[0].emailError).toBe('auth failed');
     });
 
@@ -351,6 +363,7 @@ describe('API', () => {
         throw new Error('db down');
       };
       expect((await request(app).post('/api/contact').send(contact)).status).toBe(200);
+      await app.locals.idle();
       expect(mailer.send).toHaveBeenCalledTimes(1);
     });
 
@@ -360,6 +373,7 @@ describe('API', () => {
       };
       mailer.send.mockRejectedValueOnce(new Error('smtp down'));
       expect((await request(app).post('/api/contact').send(contact)).status).toBe(502);
+      await app.locals.idle();
     });
 
     it('un échec de mise à jour du statut ne bloque pas la réponse', async () => {
@@ -367,6 +381,7 @@ describe('API', () => {
         throw new Error('db hiccup');
       };
       expect((await request(app).post('/api/contact').send(contact)).status).toBe(200);
+      await app.locals.idle();
     });
   });
 
@@ -379,6 +394,7 @@ describe('API', () => {
 
     it('liste, change le statut, supprime', async () => {
       await request(app).post('/api/contact').send(contact);
+      await app.locals.idle();
       const cookie = await login();
       const list = await request(app).get('/api/contact-requests').set('Cookie', cookie);
       expect(list.status).toBe(200);

@@ -25,6 +25,8 @@ export interface AppConfig {
   allowedOrigins: string[];
   trustProxy: number;
   smtp: SmtpConfig | null;
+  /** Clé API Resend : prioritaire sur SMTP (fonctionne sur Render gratuit). */
+  resendApiKey: string | null;
   mailFrom: string;
   contactTo: string;
   contactRetentionDays: number;
@@ -100,7 +102,14 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
       .filter(Boolean),
     trustProxy: Number(env.TRUST_PROXY ?? 1),
     smtp,
-    mailFrom: env.MAIL_FROM || (smtp ? `"Site Thibaud Saliou" <${smtp.user}>` : ''),
+    resendApiKey: env.RESEND_API_KEY || null,
+    mailFrom:
+      env.MAIL_FROM ||
+      (env.RESEND_API_KEY
+        ? 'Site Thibaud Saliou <onboarding@resend.dev>'
+        : smtp
+          ? `"Site Thibaud Saliou" <${smtp.user}>`
+          : ''),
     contactTo: env.CONTACT_TO ?? '',
     contactRetentionDays: Number(env.CONTACT_RETENTION_DAYS ?? 365),
     storage,

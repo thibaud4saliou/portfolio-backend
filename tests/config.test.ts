@@ -98,4 +98,11 @@ describe('loadConfig', () => {
     expect(c.contactRetentionDays).toBe(90);
     expect(c.storage).toBeNull();
   });
+
+  it('Resend : prioritaire, expéditeur par défaut onboarding@resend.dev', () => {
+    const c = loadConfig({ ADMIN_PASSWORD_HASH: HASH, RESEND_API_KEY: 're_123', EMAIL_USER: 'a@gmail.com', EMAIL_PASS: 'p' });
+    expect(c.resendApiKey).toBe('re_123');
+    expect(c.mailFrom).toBe('Site Thibaud Saliou <onboarding@resend.dev>');
+    expect(loadConfig({ ADMIN_PASSWORD_HASH: HASH }).resendApiKey).toBeNull();
+  });
 });
