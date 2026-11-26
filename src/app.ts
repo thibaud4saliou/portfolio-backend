@@ -305,7 +305,6 @@ export function createApp(deps: AppDeps) {
   });
 
   // Gestionnaire d'erreurs global : plus aucune erreur ne fait tomber le serveur.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     if (err?.code === 'P2025') {
       res.status(404).json({ error: 'Introuvable' });
