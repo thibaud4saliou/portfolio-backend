@@ -9,6 +9,10 @@ export function createSmtpMailer(smtp: SmtpConfig): Mailer {
     port: smtp.port,
     secure: smtp.secure,
     auth: { user: smtp.user, pass: smtp.pass },
+    // Échouer vite plutôt que de bloquer 2 minutes si le port est filtré.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
 
   transporter.verify().then(

@@ -1,0 +1,19 @@
+name: Keep-alive Render
+
+# Le plan gratuit Render met le serveur en veille après 15 min sans visite
+# (premier chargement ~50 s ensuite). Un ping toutes les 10 min le garde éveillé.
+# NB : 750 h gratuites/mois chez Render = assez pour 1 service allumé en continu.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping /api/health
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL || 'https://portfolio-backend-hchb.onrender.com' }}
+        run: curl --fail --silent --show-error --max-time 90 --retry 2 "$BACKEND_URL/api/health"
