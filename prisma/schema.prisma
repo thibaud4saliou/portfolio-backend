@@ -51,7 +51,6 @@ model SiteSettings {
   history_text          String? @db.Text
   expertise_text        String? @db.Text
   clips_text            String? @db.Text
-  awards_image_url      String?
   demo_reel_image_url   String?
   demo_reel_link        String?
   youtube_url           String?

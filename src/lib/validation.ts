@@ -137,7 +137,6 @@ export const settingsSchema: Schema = {
   history_text: longText(),
   expertise_text: longText(),
   clips_text: longText(),
-  awards_image_url: url,
   demo_reel_image_url: url,
   demo_reel_link: { kind: 'string', max: 2048, format: 'url-or-path' },
   youtube_url: url,
