@@ -305,7 +305,7 @@ export function createApp(deps: AppDeps) {
   // --- Upload direct vers le stockage (R2 / S3) -----------------------------
   api.post('/uploads/presign', requireAuth, async (req, res) => {
     if (!storage) {
-      res.status(503).json({ error: "Stockage d'images non configuré (variables S3_*)" });
+      res.status(503).json({ error: "Téléversement pas encore activé : collez un lien (URL) en attendant." });
       return;
     }
     const check = checkUpload(req.body);

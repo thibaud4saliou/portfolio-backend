@@ -120,6 +120,14 @@ describe('settingsSchema', () => {
     }
   });
 
+  it("accepte l'opacité envoyée en nombre par l'admin", () => {
+    const r = validate(settingsSchema, { home_video_opacity: 10 });
+    expect(r.ok && r.data.home_video_opacity).toBe('10');
+    expect(validate(settingsSchema, { home_video_opacity: 0 }).ok).toBe(true);
+    expect(validate(settingsSchema, { home_video_opacity: 150 }).ok).toBe(false);
+    expect(validate(settingsSchema, { home_video_opacity: 12.5 }).ok).toBe(false);
+  });
+
   it('refuse une opacité non numérique', () => {
     expect(validate(settingsSchema, { home_video_opacity: 'abc' }).ok).toBe(false);
   });

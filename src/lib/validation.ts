@@ -24,6 +24,8 @@ export type ValidationResult =
   | { ok: false; errors: Record<string, string> };
 
 function validateString(f: StringField, raw: unknown): { value?: string | null; error?: string } {
+  // L'admin envoie les champs numériques (opacité) en nombre : on les accepte.
+  if (typeof raw === 'number' && f.format === 'percent') raw = String(raw);
   if (raw === undefined || raw === null || (typeof raw === 'string' && raw.trim() === '')) {
     return f.required ? { error: 'Champ obligatoire' } : { value: null };
   }
