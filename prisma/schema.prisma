@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // linux-musl : image Docker node:alpine
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -8,30 +10,21 @@ datasource db {
 }
 
 model Project {
-  id              String   @id @default(uuid())
-  title           String
-  category        String   
-  role            String
-  year            String
-  synopsis        String?  @db.Text
-  videoUrl        String?
-  coverImageUrl   String?  // C'est la miniature !
-  makingOfUrl     String?
-  credits         String?  @db.Text
-  stills          String[]
-  order           Int      @default(0) 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
+  id            String   @id @default(uuid())
+  title         String
+  category      String // clip | realisation | directeur-photo
+  role          String
+  year          String
+  synopsis      String?  @db.Text
+  videoUrl      String?
+  coverImageUrl String? // miniature
+  credits       String?  @db.Text
+  stills        String[]
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-model Photo {
-  id          String   @id @default(uuid())
-  title       String?  // NOUVEAU : Le titre de la photo
-  category    String   
-  subcategory String?
-  imageUrl    String
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
+  @@index([category, order])
 }
 
 model Review {
@@ -43,25 +36,45 @@ model Review {
 }
 
 model Equipment {
-  id        String   @id @default(uuid())
-  category  String   
-  name      String
-  order     Int      @default(0)
+  id       String @id @default(uuid())
+  category String
+  name     String
+  order    Int    @default(0)
 }
 
 model SiteSettings {
-  id                Int     @id @default(autoincrement())
-  home_video_url    String?
-  profile_photo_url String?
-  history_text      String?
-  expertise_text    String?
-  clips_text        String?
-  youtube_url       String?
-  linkedin_url      String?
-  malt_url          String?
-  instagram_url     String?
-  vimeo_url         String?
-  devis_text            String?
-  mentions_legales_text String?
-  rgpd_text             String?
+  id                    Int     @id @default(autoincrement())
+  home_video_url        String?
+  home_video_opacity    String?
+  home_subtitle         String?
+  profile_photo_url     String?
+  history_text          String? @db.Text
+  expertise_text        String? @db.Text
+  clips_text            String? @db.Text
+  demo_reel_image_url   String?
+  demo_reel_link        String?
+  youtube_url           String?
+  linkedin_url          String?
+  malt_url              String?
+  instagram_url         String?
+  vimeo_url             String?
+  contact_email         String?
+  devis_text            String? @db.Text
+  mentions_legales_text String? @db.Text
+  rgpd_text             String? @db.Text
+}
+
+/// Demandes reçues via le formulaire de devis (copie de sécurité si le mail échoue).
+model ContactRequest {
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  type       String
+  message    String   @db.Text
+  status     String   @default("new") // new | read | archived
+  emailSent  Boolean  @default(false)
+  emailError String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
 }
