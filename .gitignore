@@ -1,5 +1,11 @@
 node_modules
-# Keep environment variables out of version control
+dist
+coverage
+# Variables d'environnement (secrets)
 .env
-
+.env.*
+!.env.example
 /src/generated/prisma
+# Fichiers macOS (disque externe)
+.DS_Store
+._*
