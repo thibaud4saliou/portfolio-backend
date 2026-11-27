@@ -8,9 +8,9 @@ export interface Storage {
   publicBaseUrl: string;
 }
 
-/** Adaptateur S3 compatible : Cloudflare R2, AWS S3, Scaleway, OVH… */
-export function createS3Storage(cfg: StorageConfig): Storage {
-  const client = new S3Client({
+/** Client S3 configuré pour R2 (réutilisé par le script de migration). */
+export function createS3Client(cfg: StorageConfig): S3Client {
+  return new S3Client({
     region: cfg.region,
     endpoint: cfg.endpoint,
     credentials: { accessKeyId: cfg.accessKeyId, secretAccessKey: cfg.secretAccessKey },
@@ -19,6 +19,11 @@ export function createS3Storage(cfg: StorageConfig): Storage {
     requestChecksumCalculation: 'WHEN_REQUIRED',
     responseChecksumValidation: 'WHEN_REQUIRED',
   });
+}
+
+/** Adaptateur S3 compatible : Cloudflare R2, AWS S3, Scaleway, OVH… */
+export function createS3Storage(cfg: StorageConfig): Storage {
+  const client = createS3Client(cfg);
 
   return {
     publicBaseUrl: cfg.publicUrl,
